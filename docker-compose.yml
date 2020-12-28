@@ -1,0 +1,19 @@
+---
+version: '2.3'
+
+services:
+    loader:
+        restart: always
+        network_mode: host
+        build: ./_docker
+        image: rushiai/auto-reloader
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /usr/bin/docker:/usr/bin/docker
+            - ./work:/work
+            - ./keys:/root/.ssh
+        working_dir: /work
+        environment:
+            - VERB=1
+            #- SLEEP_TIME=60
+            # default sleep time is 60s
