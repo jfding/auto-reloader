@@ -7,9 +7,9 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /scripts
-COPY monit.sh /scripts
+COPY loop.sh /scripts
 
 # for github.com ssh access
 COPY dot.ssh/* /root/.ssh/
 
-CMD /scripts/monit.sh
+CMD /scripts/loop.sh
