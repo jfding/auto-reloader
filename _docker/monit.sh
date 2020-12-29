@@ -6,6 +6,23 @@
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
 
+function _logging {
+    _level=$1; shift
+    _datetime=`/bin/date '+%m-%d %H:%M:%S>'`
+    if [ $_level -ge $VERB ]; then
+        echo $_datetime $*
+    fi
+}
+function mustsay {
+    _logging 0 $* > /dev/stderr
+}
+function say {
+    _logging 1 $*
+}
+function verbose {
+    _logging 2 $*
+}
+
 # expect one argument "branch_name"
 function checkout_and_copy {
   _repo=$1
@@ -18,15 +35,15 @@ function checkout_and_copy {
 
   # if no copy of this br, just mkdir with a skipping flag file
   # (do not actual copying files, unless admin specify it explicitly)
-  [[ ! -d $_cp_path ]] && mkdir -p $_cp_path && touch $_cp_path/.skipping && echo "  init dir of [ $_br ]"
+  [[ ! -d $_cp_path ]] && mkdir -p $_cp_path && touch $_cp_path/.skipping && say "  init dir of [ $_br ]"
 
 
   if [[ -f ${_cp_path}/.debugging ]]; then
-    [[ $VERB = 2 ]] && echo "  skip debugging work copy of branch [ $_br ]"
+    verbose "  skip debugging work copy of branch [ $_br ]"
     return
   fi
   if [[ -f ${_cp_path}/.skipping ]]; then
-    [[ $VERB = 2 ]] && echo "  skip unused branch [ $_br ]"
+    verbose "  skip unused branch [ $_br ]"
     return
   fi
 
@@ -34,28 +51,27 @@ function checkout_and_copy {
   [[ -f .git/index.lock ]] && rm -f .git/index.lock
 
   # check whether need to init all files at first
-  [[ -z `ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && echo "  copy files for [ $_br ]"
+  [[ -z `ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && say "  copy files for [ $_br ]"
 
   _diff=`git diff --name-only $_br origin/$_br`
-
   if [[ -n $_diff ]]; then
-    echo "  updating branch [ $_br ]"
-
     if [[ -f ${_cp_path}.docker ]]; then
       _docker_name=`cat ${_cp_path}.docker`
-    else
-      _docker_name='UNINITIALIZED'
-    fi
 
-    git checkout -q -B $_br origin/$_br
-    rsync -a --delete --exclude .git . $_cp_path
+      say "  updating branch [ $_br ]"
+      git checkout -q -B $_br origin/$_br
+      rsync -a --delete --exclude .git . $_cp_path
 
-    # restart docker instance
-    if [[ $_docker_name != 'UNINITIALIZED' ]]; then
+      say "  restarting docker [ $_docker_name ]"
       docker restart $_docker_name
+      unset _docker_name
+
+    else
+      verbose "  no docker configered for changed branch [ $_br ], skip"
     fi
+
   else
-    [[ $VERB = 2 ]] && echo "  no change of branch [ $_br ], skip"
+    verbose "  no change of branch [ $_br ], skip"
   fi
 }
 
@@ -65,7 +81,7 @@ function fetch_and_check {
 
   cd $_repo
 
-  [[ $VERB = 1 ]] && echo "  fetching repo ..."
+  say "  fetching repo ..."
   git fetch -q --all
 
   #for _br in `ls .git/refs/remotes/origin/`; do
@@ -84,7 +100,7 @@ cd /work/git_repos
 while true; do
   for _repo in * ; do
     if [[ -d $_repo/.git ]]; then
-      echo "checking git status for <$_repo>"
+      mustsay "checking git status for <$_repo>"
       fetch_and_check $_repo
     fi
   done
