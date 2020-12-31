@@ -2,6 +2,7 @@
 
 [[ -z $VERB ]] && VERB=1
 [[ -z $SLEEP_TIME ]] && SLEEP_TIME=60
+[[ -z $TIMEOUT ]] && TIMEOUT=600
 
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
@@ -21,6 +22,14 @@ function say {
 }
 function verbose {
     _logging 2 $*
+}
+
+function _timeout {
+    if which timeout &>/dev/null; then
+        timeout $TIMEOUT $*
+    else
+        $*
+    fi
 }
 
 # expect one argument "branch_name"
@@ -82,7 +91,7 @@ function fetch_and_check {
   cd $_repo
 
   say "  fetching repo ..."
-  git fetch -q --all
+  _timeout git fetch -q --all
 
   #for _br in `ls .git/refs/remotes/origin/`; do
   for _br in `git branch -r  | grep -v HEAD | sed -e 's/.*origin\///'`; do
