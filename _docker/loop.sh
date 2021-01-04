@@ -10,12 +10,12 @@
 function _logging {
     _level=$1; shift
     _datetime=`/bin/date '+%m-%d %H:%M:%S>'`
-    if [ $_level -ge $VERB ]; then
+    if [ $_level -le $VERB ]; then
         echo $_datetime $*
     fi
 }
 function mustsay {
-    _logging 0 $* > /dev/stderr
+    _logging 0 $*
 }
 function say {
     _logging 1 $*
@@ -44,15 +44,15 @@ function checkout_and_copy {
 
   # if no copy of this br, just mkdir with a skipping flag file
   # (do not actual copying files, unless admin specify it explicitly)
-  [[ ! -d $_cp_path ]] && mkdir -p $_cp_path && touch $_cp_path/.skipping && say "  init dir of [ $_br ]"
+  [[ ! -d $_cp_path ]] && mkdir -p $_cp_path && touch $_cp_path/.skipping && say "..init dir of [ $_br ]"
 
 
   if [[ -f ${_cp_path}/.debugging ]]; then
-    verbose "  skip debugging work copy of branch [ $_br ]"
+    verbose "..skip debugging work copy of branch [ $_br ]"
     return
   fi
   if [[ -f ${_cp_path}/.skipping ]]; then
-    verbose "  skip unused branch [ $_br ]"
+    verbose "..skip unused branch [ $_br ]"
     return
   fi
 
@@ -60,30 +60,30 @@ function checkout_and_copy {
   [[ -f .git/index.lock ]] && rm -f .git/index.lock
 
   # check whether need to init all files at first
-  [[ -z `ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && say "  copy files for [ $_br ]"
+  [[ -z `ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for [ $_br ]"
 
   _diff=`git diff --name-only $_br origin/$_br`
   if [[ -n $_diff ]]; then
     if [[ -f ${_cp_path}.docker ]]; then
       _docker_name=`cat ${_cp_path}.docker`
 
-      say "  updating branch [ $_br ]"
+      say "..updating branch [ $_br ]"
       git checkout -q -B $_br origin/$_br || {
-          mustsay "failed git checkout and skip"
+          mustsay "..failed git checkout and skip"
           return
       }
       rsync -a --delete --exclude .git . $_cp_path
 
-      say "  restarting docker [ $_docker_name ]"
+      say "..restarting docker [ $_docker_name ]"
       docker restart $_docker_name
       unset _docker_name
 
     else
-      verbose "  no docker configered for changed branch [ $_br ], skip"
+      verbose "..no docker configered for changed branch [ $_br ], skip"
     fi
 
   else
-    verbose "  no change of branch [ $_br ], skip"
+    verbose "..no change of branch [ $_br ], skip"
   fi
 }
 
@@ -93,7 +93,7 @@ function fetch_and_check {
 
   cd $_repo
 
-  say "  fetching repo ..."
+  say "..fetching repo ..."
   _timeout git fetch -q --all
 
   #for _br in `ls .git/refs/remotes/origin/`; do
@@ -117,5 +117,6 @@ while true; do
     fi
   done
 
+  say "waiting for next check ..."
   sleep $SLEEP_TIME
 done
