@@ -75,7 +75,7 @@ function checkout_and_copy {
       rsync -a --delete --exclude .git . $_cp_path
 
       say "..restarting docker [ $_docker_name ]"
-      docker restart $_docker_name
+      docker restart $_docker_name > /dev/null
       unset _docker_name
 
     else
