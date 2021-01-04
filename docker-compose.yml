@@ -16,4 +16,6 @@ services:
         environment:
             - VERB=1
             #- SLEEP_TIME=60
-            # default sleep time is 60s
+               # default sleep time is 60s
+            #- TIMEOUT=600
+               # default timeout of possible pending cmd is 600s
