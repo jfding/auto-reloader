@@ -68,7 +68,10 @@ function checkout_and_copy {
       _docker_name=`cat ${_cp_path}.docker`
 
       say "  updating branch [ $_br ]"
-      git checkout -q -B $_br origin/$_br
+      git checkout -q -B $_br origin/$_br || {
+          mustsay "failed git checkout and skip"
+          return
+      }
       rsync -a --delete --exclude .git . $_cp_path
 
       say "  restarting docker [ $_docker_name ]"
