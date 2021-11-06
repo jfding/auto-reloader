@@ -39,14 +39,11 @@ function checkout_and_copy {
 
   _cp_path="../../copies/${_repo}.${_br}"
 
-  # start to work on this br
-  git checkout -q -f $_br
-
   # if no copy of this br, just mkdir with a skipping flag file
   # (do not actual copying files, unless admin specify it explicitly)
   [[ ! -d $_cp_path ]] && mkdir -p $_cp_path && touch $_cp_path/.skipping && say "..init dir of [ $_br ]"
 
-
+  # checking flags
   if [[ -f ${_cp_path}/.debugging ]]; then
     verbose "..skip debugging work copy of branch [ $_br ]"
     return
@@ -55,6 +52,9 @@ function checkout_and_copy {
     verbose "..skip unused branch [ $_br ]"
     return
   fi
+
+  # start to work on this br
+  git checkout -q -f $_br
 
   # clean up trash file from last time crash
   [[ -f .git/index.lock ]] && rm -f .git/index.lock
