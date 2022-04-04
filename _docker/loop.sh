@@ -105,7 +105,10 @@ function fetch_and_check {
   cd ..
 }
 
+## __main__ start here
+
 # working dir
+[[ -d /work/git_repos ]] || mkdir -p /work/git_repos
 cd /work/git_repos
 
 # loop like a daemon
