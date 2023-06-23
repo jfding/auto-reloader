@@ -7,6 +7,9 @@
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
 
+DIR_REPOS=/work/git_repos
+DIR_COPIES=/work/copies
+
 function _logging {
     _level=$1; shift
     _datetime=`/bin/date '+%m-%d %H:%M:%S>'`
@@ -37,7 +40,7 @@ function checkout_and_copy {
   _repo=$1
   _br=$2
 
-  _cp_path="../../copies/${_repo}.${_br}"
+  _cp_path="${DIR_COPIES}/${_repo}.${_br}"
 
   # if no copy of this br, just mkdir with a skipping flag file
   # (do not actual copying files, unless admin specify it explicitly)
@@ -64,9 +67,6 @@ function checkout_and_copy {
 
   _diff=`git diff --name-only $_br origin/$_br`
   if [[ -n $_diff ]]; then
-    if [[ -f ${_cp_path}.docker ]]; then
-      _docker_name=`cat ${_cp_path}.docker`
-
       say "..updating branch [ $_br ]"
       git checkout -q -B $_br origin/$_br || {
           mustsay "..failed git checkout and skip"
@@ -74,12 +74,22 @@ function checkout_and_copy {
       }
       rsync -a --delete --exclude .git . $_cp_path
 
+    if [[ -f ${_cp_path}.docker ]]; then
+      _docker_name=`cat ${_cp_path}.docker`
+
       say "..restarting docker [ $_docker_name ]"
       docker restart $_docker_name > /dev/null
       unset _docker_name
 
     else
-      verbose "..no docker configered for changed branch [ $_br ], skip"
+      verbose "..no docker configered for changed branch [ $_br ], skip restart docker"
+    fi
+
+    if [[ -f ${_cp_path}.post ]]; then
+      say "..running post scripts for branch [ $_br ]"
+      cd $DIR_COPIES
+      bash ${_cp_path}.post
+      cd -
     fi
 
   else
@@ -108,8 +118,8 @@ function fetch_and_check {
 ## __main__ start here
 
 # working dir
-[[ -d /work/git_repos ]] || mkdir -p /work/git_repos
-cd /work/git_repos
+[[ -d $DIR_REPOS ]] || mkdir -p $DIR_REPOS
+cd $DIR_REPOS
 
 # loop like a daemon
 while true; do
