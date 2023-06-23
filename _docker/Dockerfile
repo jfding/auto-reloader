@@ -15,10 +15,10 @@ RUN curl -OL https://nodejs.org/dist/v18.16.1/node-v18.16.1-linux-x64.tar.xz && 
     rm -f node-v18.16.1-linux-x64.tar.xz
 RUN export PATH="$PATH:/node/bin"
 
-WORKDIR /work
 
 # for github.com ssh access
 COPY dot.ssh/* /root/.ssh/
 
+WORKDIR /scripts
 COPY loop.sh /scripts
 CMD /scripts/loop.sh

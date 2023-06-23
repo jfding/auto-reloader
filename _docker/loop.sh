@@ -66,8 +66,19 @@ function checkout_and_copy {
   [[ -z `ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for [ $_br ]"
 
   _diff=`git diff --name-only $_br origin/$_br`
+
+  # add a debug trigger
+  if [[ -f ${_cp_path}/.trigger ]]; then
+    rm -f ${_cp_path}/.trigger # burn after reading
+
+    if [[ -z $_diff ]]; then
+      say "..having a debug try"
+      _diff="debugging"
+    fi
+  fi
+
   if [[ -n $_diff ]]; then
-      say "..updating branch [ $_br ]"
+      say "..UPDATING branch [ $_br ]"
       git checkout -q -B $_br origin/$_br || {
           mustsay "..failed git checkout and skip"
           return
@@ -87,8 +98,8 @@ function checkout_and_copy {
 
     if [[ -f ${_cp_path}.post ]]; then
       say "..running post scripts for branch [ $_br ]"
-      cd $DIR_COPIES
-      bash ${_cp_path}.post
+      cd ${_cp_path}
+      bash "${_cp_path}.post"
       cd -
     fi
 
