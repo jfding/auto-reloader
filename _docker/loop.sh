@@ -83,24 +83,30 @@ function checkout_and_copy {
           mustsay "..failed git checkout and skip"
           return
       }
-      rsync -a --delete --exclude .git . $_cp_path
+      if [[ -f ${_cp_path}/.no-cleanup ]]; then
+        # if ./no-cleanup existing, do not clean up cached or built files
+        rsync -a --exclude .git . $_cp_path
+      else
+        rsync -a --delete --exclude .git . $_cp_path
+      fi
 
+    # post scripts
+    if [[ -f ${_cp_path}.post ]]; then
+      say "..running post scripts for branch [ $_br ]"
+      cd ${_cp_path}
+      bash "${_cp_path}.post"
+      cd -
+    fi
+
+    # restart docker instance
     if [[ -f ${_cp_path}.docker ]]; then
       _docker_name=`cat ${_cp_path}.docker`
 
       say "..restarting docker [ $_docker_name ]"
       docker restart $_docker_name > /dev/null
       unset _docker_name
-
     else
       verbose "..no docker configered for changed branch [ $_br ], skip restart docker"
-    fi
-
-    if [[ -f ${_cp_path}.post ]]; then
-      say "..running post scripts for branch [ $_br ]"
-      cd ${_cp_path}
-      bash "${_cp_path}.post"
-      cd -
     fi
 
   else
