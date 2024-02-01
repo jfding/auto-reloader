@@ -35,8 +35,25 @@ function _timeout {
     fi
 }
 
+# expect one argument "tag_name"
+function checkout_and_copy_tag {
+  _repo=$1
+  _tag=$2
+
+  _cp_path="${DIR_COPIES}/${_repo}.prod.${_tag}"
+
+  # if path exists, skip
+  [[ -d $_cp_path ]] && return
+
+  # start to work on this br
+  git checkout -q -f $_tag
+
+  # check whether need to init all files at first
+  mkdir -p $_cp_path && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for new RELEASE [ $_tag ]"
+}
+
 # expect one argument "branch_name"
-function checkout_and_copy {
+function checkout_and_copy_br {
   _repo=$1
   _br=$2
 
@@ -58,9 +75,6 @@ function checkout_and_copy {
 
   # start to work on this br
   git checkout -q -f $_br
-
-  # clean up trash file from last time crash
-  [[ -f .git/index.lock ]] && rm -f .git/index.lock
 
   # check whether need to init all files at first
   [[ -z `ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for [ $_br ]"
@@ -120,13 +134,20 @@ function fetch_and_check {
 
   cd $_repo
 
+  # clean up trash file from last time crash
+  [[ -f .git/index.lock ]] && rm -f .git/index.lock
+
   say "..fetching repo ..."
-  _timeout git fetch -q --all
+  _timeout git fetch -q --all --tags
 
   #for _br in `ls .git/refs/remotes/origin/`; do
   for _br in `git branch -r  | grep -v HEAD | sed -e 's/.*origin\///'`; do
     [[ $_br = 'HEAD' ]] && continue
-    checkout_and_copy $_repo $_br
+    checkout_and_copy_br $_repo $_br
+  done
+
+  for _release in `git tag -l  | grep '^v[0-9.]\+$' `; do
+    checkout_and_copy_tag $_repo $_release
   done
 
   cd ..
