@@ -5,6 +5,7 @@ services:
     loader:
         restart: always
         image: rushiai/auto-reloader
+        build: ./_docker
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - /usr/bin/docker:/usr/bin/docker
