@@ -143,6 +143,8 @@ function fetch_and_check {
   #for _br in `ls .git/refs/remotes/origin/`; do
   for _br in `git branch -r  | grep -v HEAD | sed -e 's/.*origin\///'`; do
     [[ $_br = 'HEAD' ]] && continue
+    (echo $_br | grep -q '/') && continue
+
     checkout_and_copy_br $_repo $_br
 
     # heart beat
