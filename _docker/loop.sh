@@ -77,7 +77,7 @@ function checkout_and_copy_br {
   git checkout -q -f $_br
 
   # check whether need to init all files at first
-  [[ -z `ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for [ $_br ]"
+  [[ -z `/bin/ls $_cp_path` ]] && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for [ $_br ]"
 
   _diff=`git diff --name-only $_br origin/$_br`
 
@@ -144,10 +144,29 @@ function fetch_and_check {
   for _br in `git branch -r  | grep -v HEAD | sed -e 's/.*origin\///'`; do
     [[ $_br = 'HEAD' ]] && continue
     checkout_and_copy_br $_repo $_br
+
+    # heart beat
+    touch "${DIR_COPIES}/${_repo}.${_br}/.living"
   done
 
   for _release in `git tag -l  | grep '^v[0-9.]\+$' `; do
     checkout_and_copy_tag $_repo $_release
+
+    # heart beat
+    touch "${DIR_COPIES}/${_repo}.prod.${_release}/.living"
+  done
+
+  # clean up deprected dirs in "work/copies"
+  for _bp in `/bin/ls -d ${DIR_COPIES}/${_repo}.*/`; do
+      _bp=${_bp::-1}
+
+      if [ -f $_bp/.living ]; then
+        rm -f "$_bp/.living"
+      else
+        say "..cleaning up deprecated dir: $_bp"
+        rm -rf $_bp
+        rm -f ${_bp}.*
+      fi
   done
 
   cd ..
