@@ -160,14 +160,18 @@ function fetch_and_check {
 
   # clean up deprected dirs in "work/copies"
   for _bp in `/bin/ls -d ${DIR_COPIES}/${_repo}.*/`; do
+
+      (echo $_bp | grep -q to-be-removed) && continue
+
       _bp=${_bp::-1}
 
       if [ -f $_bp/.living ]; then
         rm -f "$_bp/.living"
       else
         say "..cleaning up deprecated dir: $_bp"
-        rm -rf $_bp
-        rm -f ${_bp}.*
+        #rm -rf $_bp
+        #rm -f ${_bp}.*
+        mv $_bp $_bp.to-be-removed
       fi
   done
 
