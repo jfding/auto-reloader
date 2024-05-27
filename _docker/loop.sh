@@ -35,12 +35,40 @@ function _timeout {
     fi
 }
 
+function _handle_post {
+    # post scripts
+    _post_path=$1
+    _cp_path=$2
+
+    if [[ -f ${_post_path} ]]; then
+      say "..running post scripts [ $_post_path ]"
+      cd ${_cp_path}
+      bash "${_post_path}"
+      cd -
+    fi
+}
+
+function _handle_docker {
+    # restart docker instance
+    _docker_path=$1
+
+    if [[ -f ${_docker_path} ]]; then
+      _docker_name=`cat ${_docker_path}`
+
+      say "..restarting docker [ $_docker_name ]"
+      docker restart $_docker_name > /dev/null
+      unset _docker_name
+    fi
+}
+
 # expect one argument "tag_name"
 function checkout_and_copy_tag {
   _repo=$1
   _tag=$2
 
   _cp_path="${DIR_COPIES}/${_repo}.prod.${_tag}"
+  _post_path="${DIR_COPIES}/${_repo}.prod.post"
+  _docker_path="${DIR_COPIES}/${_repo}.prod.docker"
 
   # if path exists, skip
   [[ -d $_cp_path ]] && return
@@ -50,6 +78,12 @@ function checkout_and_copy_tag {
 
   # check whether need to init all files at first
   mkdir -p $_cp_path && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for new RELEASE [ $_tag ]"
+
+  # post scripts
+  _handle_post ${_post_path} ${_cp_path}
+
+  # restart docker instance
+  _handle_docker ${_docker_path}
 }
 
 # expect one argument "branch_name"
@@ -58,6 +92,8 @@ function checkout_and_copy_br {
   _br=$2
 
   _cp_path="${DIR_COPIES}/${_repo}.${_br}"
+  _post_path="${_cp_path}.post"
+  _docker_path="${_cp_path}.docker"
 
   # if no copy of this br, just mkdir with a skipping flag file
   # (do not actual copying files, unless admin specify it explicitly)
@@ -104,26 +140,13 @@ function checkout_and_copy_br {
         rsync -a --delete --exclude .git . $_cp_path
       fi
 
-    # post scripts
-    if [[ -f ${_cp_path}.post ]]; then
-      say "..running post scripts for branch [ $_br ]"
-      cd ${_cp_path}
-      bash "${_cp_path}.post"
-      cd -
-    fi
+      # post scripts
+      _handle_post ${_post_path} ${_cp_path}
 
-    # restart docker instance
-    if [[ -f ${_cp_path}.docker ]]; then
-      _docker_name=`cat ${_cp_path}.docker`
+      # restart docker instance
+      _handle_docker ${_docker_path}
 
-      say "..restarting docker [ $_docker_name ]"
-      docker restart $_docker_name > /dev/null
-      unset _docker_name
-    else
-      verbose "..no docker configered for changed branch [ $_br ], skip restart docker"
-    fi
-
-  else
+      else
     verbose "..no change of branch [ $_br ], skip"
   fi
 }
