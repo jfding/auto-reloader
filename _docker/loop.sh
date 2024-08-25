@@ -12,11 +12,6 @@ BR_WHITELIST="main master dev test alpha"
 DIR_REPOS=/work/git_repos
 DIR_COPIES=/work/copies
 
-# helper func to check if 'str' in a str list
-_contains() {
-    [[ $2 =~ (^|[[:space:]])$1($|[[:space:]]) ]] && return 0 || return 1
-}
-
 function _logging {
     local _level=$1; shift
     local _datetime=`/bin/date '+%m-%d %H:%M:%S>'`
@@ -179,7 +174,7 @@ function fetch_and_check {
     (echo $_br | grep -q '/') && continue
 
     # check branch whitelist || repo dir exists already
-    if _contains $_br $BR_WHITELIST || [[ -d "${DIR_COPIES}/${_repo}.${_br}" ]]; then
+    if [[ $BR_WHITELIST =~ (^|[[:space:]])$_br($|[[:space:]]) ]] || [[ -d "${DIR_COPIES}/${_repo}.${_br}" ]]; then
         checkout_and_copy_br $_repo $_br
 
         # heart beat
