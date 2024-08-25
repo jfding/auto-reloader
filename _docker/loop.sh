@@ -4,15 +4,22 @@
 [[ -z $SLEEP_TIME ]] && SLEEP_TIME=60
 [[ -z $TIMEOUT ]] && TIMEOUT=600
 
+BR_WHITELIST="main master dev test alpha"
+
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
 
 DIR_REPOS=/work/git_repos
 DIR_COPIES=/work/copies
 
+# helper func to check if 'str' in a str list
+_contains() {
+    [[ $2 =~ (^|[[:space:]])$1($|[[:space:]]) ]] && return 0 || return 1
+}
+
 function _logging {
-    _level=$1; shift
-    _datetime=`/bin/date '+%m-%d %H:%M:%S>'`
+    local _level=$1; shift
+    local _datetime=`/bin/date '+%m-%d %H:%M:%S>'`
     if [ $_level -le $VERB ]; then
         echo $_datetime $*
     fi
@@ -37,8 +44,8 @@ function _timeout {
 
 function _handle_post {
     # post scripts
-    _post_path=$1
-    _cp_path=$2
+    local _post_path=$1
+    local _cp_path=$2
 
     if [[ -f ${_post_path} ]]; then
       say "..running post scripts [ $_post_path ]"
@@ -50,7 +57,7 @@ function _handle_post {
 
 function _handle_docker {
     # restart docker instance
-    _docker_path=$1
+    local _docker_path=$1
 
     if [[ -f ${_docker_path} ]]; then
       _docker_name=`cat ${_docker_path}`
@@ -63,8 +70,8 @@ function _handle_docker {
 
 # expect one argument "tag_name"
 function checkout_and_copy_tag {
-  _repo=$1
-  _tag=$2
+  local _repo=$1
+  local _tag=$2
 
   _cp_path="${DIR_COPIES}/${_repo}.prod.${_tag}"
   _post_path="${DIR_COPIES}/${_repo}.prod.post"
@@ -88,12 +95,12 @@ function checkout_and_copy_tag {
 
 # expect one argument "branch_name"
 function checkout_and_copy_br {
-  _repo=$1
-  _br=$2
+  local _repo=$1
+  local _br=$2
 
-  _cp_path="${DIR_COPIES}/${_repo}.${_br}"
-  _post_path="${_cp_path}.post"
-  _docker_path="${_cp_path}.docker"
+  local _cp_path="${DIR_COPIES}/${_repo}.${_br}"
+  local _post_path="${_cp_path}.post"
+  local _docker_path="${_cp_path}.docker"
 
   # if no copy of this br, just mkdir with a skipping flag file
   # (do not actual copying files, unless admin specify it explicitly)
@@ -153,7 +160,10 @@ function checkout_and_copy_br {
 
 # expect one argument "branch_name"
 function fetch_and_check {
-  _repo=$1
+  local _repo=$1
+  local _br
+  local _release
+  local _bp
 
   cd $_repo
 
@@ -168,10 +178,13 @@ function fetch_and_check {
     [[ $_br = 'HEAD' ]] && continue
     (echo $_br | grep -q '/') && continue
 
-    checkout_and_copy_br $_repo $_br
+    # check branch whitelist || repo dir exists already
+    if _contains $_br $BR_WHITELIST || [[ -d "${DIR_COPIES}/${_repo}.${_br}" ]]; then
+        checkout_and_copy_br $_repo $_br
 
-    # heart beat
-    touch "${DIR_COPIES}/${_repo}.${_br}/.living"
+        # heart beat
+        touch "${DIR_COPIES}/${_repo}.${_br}/.living"
+    fi
   done
 
   for _release in `git tag -l  | grep '^v[0-9.]\+$' `; do
