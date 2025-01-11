@@ -19,5 +19,5 @@ ENV PATH "$PATH:/node/bin"
 COPY dot.ssh/* /root/.ssh/
 
 WORKDIR /scripts
-COPY loop.sh /scripts
-CMD /scripts/loop.sh
+COPY check-push.sh /scripts
+CMD /scripts/check-push.sh

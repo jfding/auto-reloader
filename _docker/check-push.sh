@@ -224,6 +224,8 @@ while true; do
     fi
   done
 
+  [[ -z $SLEEP_TIME ]] && exit 0
+
   say "waiting for next check ..."
   sleep $SLEEP_TIME
 done
