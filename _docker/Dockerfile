@@ -20,4 +20,8 @@ COPY dot.ssh/* /root/.ssh/
 
 WORKDIR /scripts
 COPY check-push.sh /scripts
-CMD /scripts/check-push.sh
+COPY hook.py /scripts
+COPY *.whl /scripts
+RUN pip install /scripts/*.whl
+
+CMD /scripts/hook.py
