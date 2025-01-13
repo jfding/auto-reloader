@@ -1,7 +1,6 @@
 #!/bin/bash
 
 [[ -z $VERB ]] && VERB=1
-[[ -z $SLEEP_TIME ]] && SLEEP_TIME=60
 [[ -z $TIMEOUT ]] && TIMEOUT=600
 
 BR_WHITELIST="main master dev test alpha"
