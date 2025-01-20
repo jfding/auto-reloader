@@ -1,15 +1,16 @@
 #!/bin/bash
 
+## global settings
 [[ -z $VERB ]] && VERB=1
 [[ -z $TIMEOUT ]] && TIMEOUT=600
-
-BR_WHITELIST="main master dev test alpha"
 
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
 
+BR_WHITELIST="main master dev test alpha"
 DIR_REPOS=/work/git_repos
 DIR_COPIES=/work/copies
+CI_LOCK=/work/.ci-lock
 
 function _logging {
     local _level=$1; shift
@@ -205,26 +206,36 @@ function fetch_and_check {
       fi
   done
 
-  cd ..
+  cd -
+}
+
+function main {
+  # working dir
+  [[ -d $DIR_REPOS ]] || mkdir -p $DIR_REPOS
+  cd $DIR_REPOS
+
+  # loop like a daemon
+  while true; do
+    # Acquire file-lock
+    while [[ -f $CI_LOCK ]]; do sleep 1; done
+    touch $CI_LOCK
+
+    for _repo in * ; do
+      if [[ -d $_repo/.git ]]; then
+        mustsay "checking git status for <$_repo>"
+        fetch_and_check $_repo
+      fi
+    done
+
+    # Release lock
+    rm -f $CI_LOCK
+
+    [[ -z $SLEEP_TIME ]] && exit 0
+
+    say "waiting for next check ..."
+    sleep $SLEEP_TIME
+  done
 }
 
 ## __main__ start here
-
-# working dir
-[[ -d $DIR_REPOS ]] || mkdir -p $DIR_REPOS
-cd $DIR_REPOS
-
-# loop like a daemon
-while true; do
-  for _repo in * ; do
-    if [[ -d $_repo/.git ]]; then
-      mustsay "checking git status for <$_repo>"
-      fetch_and_check $_repo
-    fi
-  done
-
-  [[ -z $SLEEP_TIME ]] && exit 0
-
-  say "waiting for next check ..."
-  sleep $SLEEP_TIME
-done
+main
