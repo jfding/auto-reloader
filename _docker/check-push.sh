@@ -1,13 +1,13 @@
 #!/bin/bash
 
+## global settings
 [[ -z $VERB ]] && VERB=1
 [[ -z $TIMEOUT ]] && TIMEOUT=600
-
-BR_WHITELIST="main master dev test alpha"
 
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
 
+BR_WHITELIST="main master dev test alpha"
 DIR_REPOS=/work/git_repos
 DIR_COPIES=/work/copies
 
@@ -208,23 +208,33 @@ function fetch_and_check {
   cd ..
 }
 
-## __main__ start here
+function main {
+  # working dir
+  [[ -d $DIR_REPOS ]] || mkdir -p $DIR_REPOS
+  cd $DIR_REPOS
 
-# working dir
-[[ -d $DIR_REPOS ]] || mkdir -p $DIR_REPOS
-cd $DIR_REPOS
+  # Acquire file-lock
+  while [ -f .ci-lock ]; do sleep 1; done
+  touch .ci-lock
 
-# loop like a daemon
-while true; do
-  for _repo in * ; do
-    if [[ -d $_repo/.git ]]; then
-      mustsay "checking git status for <$_repo>"
-      fetch_and_check $_repo
-    fi
+  # loop like a daemon
+  while true; do
+    for _repo in * ; do
+      if [[ -d $_repo/.git ]]; then
+        mustsay "checking git status for <$_repo>"
+        fetch_and_check $_repo
+      fi
+    done
+
+    [[ -z $SLEEP_TIME ]] && exit 0
+
+    say "waiting for next check ..."
+    sleep $SLEEP_TIME
   done
 
-  [[ -z $SLEEP_TIME ]] && exit 0
+  # Release lock
+  rm .ci-lock
+}
 
-  say "waiting for next check ..."
-  sleep $SLEEP_TIME
-done
+## __main__ start here
+main
