@@ -6,6 +6,7 @@ RUN apt-get update && \
     openssh-client \
     rsync \
     curl \
+    netcat-openbsd \
     xz-utils \
     && rm -rf /var/lib/apt/lists/*
 

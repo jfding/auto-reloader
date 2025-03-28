@@ -46,7 +46,7 @@ function _handle_post {
       say "..running post scripts [ $_post_path ]"
       cd ${_cp_path}
       bash "${_post_path}"
-      cd -
+      cd - > /dev/null
     fi
 }
 
@@ -206,7 +206,7 @@ function fetch_and_check {
       fi
   done
 
-  cd -
+  cd - > /dev/null
 }
 
 function main {
