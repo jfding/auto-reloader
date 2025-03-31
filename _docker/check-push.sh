@@ -10,7 +10,7 @@
 BR_WHITELIST="main master dev test alpha"
 DIR_REPOS=/work/git_repos
 DIR_COPIES=/work/copies
-CI_LOCK=/work/.ci-lock
+CI_LOCK=/tmp/.ci-lock
 
 function _logging {
     local _level=$1; shift
