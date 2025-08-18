@@ -212,7 +212,6 @@ function fetch_and_check {
 function main {
   # working dir
   [[ -d $DIR_REPOS ]] || mkdir -p $DIR_REPOS
-  cd $DIR_REPOS
 
   # loop like a daemon
   while true; do
@@ -220,6 +219,7 @@ function main {
     while [[ -f $CI_LOCK ]]; do sleep 1; done
     touch $CI_LOCK
 
+    cd $DIR_REPOS
     for _repo in * ; do
       if [[ -d $_repo/.git ]]; then
         mustsay "checking git status for <$_repo>"
