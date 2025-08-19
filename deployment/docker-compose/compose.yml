@@ -4,7 +4,7 @@ version: '2.3'
 services:
     loader:
         restart: always
-        image: rushiai/auto-reloader
+        image: rushiai/auto-reloader:20250819
         build: ./_docker
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
@@ -14,7 +14,7 @@ services:
         working_dir: /work
         environment:
             - VERB=1
-            #- SLEEP_TIME=60
-               # default sleep time is 60s
-            #- TIMEOUT=600
-               # default timeout of possible pending cmd is 600s
+            #- SLEEP_TIME=360
+               # default sleep time is 360s
+            #- TIMEOUT=120
+               # default timeout of possible pending cmd is 120s
