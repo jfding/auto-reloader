@@ -8,9 +8,10 @@
 [[ $VERB = 0 ]] && exec>/dev/null
 
 BR_WHITELIST="main master dev test alpha"
-DIR_REPOS=/work/git_repos
-DIR_COPIES=/work/copies
-CI_LOCK=/tmp/.ci-lock
+
+[[ -z $DIR_REPOS ]] && DIR_REPOS=/work/git_repos
+[[ -z $DIR_COPIES ]] && DIR_COPIES=/work/copies
+[[ -z $CI_LOCK ]] && CI_LOCK=/tmp/.ci-lock
 
 function _logging {
     local _level=$1; shift
@@ -194,7 +195,7 @@ function fetch_and_check {
 
       (echo $_bp | grep -q to-be-removed) && continue
 
-      _bp=${_bp::-1}
+      _bp=${_bp%/}
 
       if [ -f $_bp/.living ]; then
         rm -f "$_bp/.living"
