@@ -197,6 +197,15 @@ function fetch_and_check {
 
       _bp=${_bp%/}
 
+      # manually marked as deprecated
+      if [ -f $_bp/.stopping ]; then
+        # clean up all content
+        rm -rf $_bp
+        mkdir -p $_bp
+        touch $_bp/.skipping
+        touch $_bp/.living
+      fi
+
       if [ -f $_bp/.living ]; then
         rm -f "$_bp/.living"
       else
