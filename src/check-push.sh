@@ -167,7 +167,7 @@ function fetch_and_check {
   [[ -f .git/index.lock ]] && rm -f .git/index.lock
 
   say "..fetching repo ..."
-  _timeout git fetch -q --all --tags
+  _timeout git fetch -q --all --tags --prune
 
   #for _br in `ls .git/refs/remotes/origin/`; do
   for _br in `git branch -r  | grep -v HEAD | sed -e 's/.*origin\///'`; do
