@@ -70,12 +70,16 @@ function checkout_and_copy_tag {
   local _tag=$2
 
   _cp_path="${DIR_COPIES}/${_repo}.prod.${_tag}"
+  _arch_path="${DIR_COPIES}/.archives/${_repo}.prod.${_tag}"
   _post_path="${DIR_COPIES}/${_repo}.prod.post"
   _docker_path="${DIR_COPIES}/${_repo}.prod.docker"
 
   # if path exists, skip
   [[ -d $_cp_path ]] && return
 
+  # if path exists with dot prefix, skip
+  [[ -d $_arch_path ]] && return
+  
   # start to work on this br
   git checkout -q -f $_tag
 
@@ -187,7 +191,9 @@ function fetch_and_check {
     checkout_and_copy_tag $_repo $_release
 
     # heart beat
-    touch "${DIR_COPIES}/${_repo}.prod.${_release}/.living"
+    if [[ -d "${DIR_COPIES}/${_repo}.prod.${_release}" ]]; then
+      touch "${DIR_COPIES}/${_repo}.prod.${_release}/.living"
+    fi
   done
 
   # clean up deprected dirs in "work/copies"
