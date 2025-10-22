@@ -114,10 +114,10 @@ function checkout_and_copy_tag {
 
     if _version_less_than $_cur_latest_tag $_tag; then
       rm -f $_latest_path
-      ln -sf $_cp_path $_latest_path
+      ln -sf $(basename $_cp_path) $_latest_path
     fi
   else
-    ln -sf $_cp_path $_latest_path
+    ln -sf $(basename $_cp_path) $_latest_path
   fi
 
   # post scripts
