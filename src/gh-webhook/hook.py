@@ -33,7 +33,7 @@ def webhook():
 
     if event == 'push':
         # Example: Run a CI script
-        subprocess.run(['/scripts/check-push.sh'], check=True)
+        subprocess.run(['/scripts/check-push.sh', 'once'], check=True)
         return jsonify({'status': 'CI job started'}), 200
 
     return jsonify({'status': 'Event not handled'}), 200

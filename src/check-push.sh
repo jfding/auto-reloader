@@ -3,6 +3,7 @@
 ## global settings
 [[ -z $VERB ]] && VERB=1
 [[ -z $TIMEOUT ]] && TIMEOUT=600
+[[ -z $SLEEP_TIME ]] && SLEEP_TIME=360
 
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
@@ -280,6 +281,7 @@ function main {
     # Release lock
     rm -f $CI_LOCK
 
+    # if SLEEP_TIME is not set, means run once and exit
     [[ -z $SLEEP_TIME ]] && exit 0
 
     say "waiting for next check ..."
@@ -288,4 +290,9 @@ function main {
 }
 
 ## __main__ start here
-main
+if [[ $1 == "once" ]]; then
+  unset SLEEP_TIME
+  main
+else
+  main
+fi
