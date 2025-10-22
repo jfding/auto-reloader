@@ -13,6 +13,26 @@ BR_WHITELIST="main master dev test alpha"
 [[ -z $DIR_COPIES ]] && DIR_COPIES=/work/copies
 [[ -z $CI_LOCK ]] && CI_LOCK=/tmp/.ci-lock
 
+function _version_less_than {
+  if [[ -z $1 ]] || [[ -z $2 ]]; then
+    return 100
+  fi
+  if [[ $1 == $2 ]]; then
+    return 2
+  fi
+
+  python3 -c "
+import sys
+v1, v2 = sys.argv[1].lstrip('v'), sys.argv[2].lstrip('v')
+n1 = [int(x) for x in v1.split('.')]
+n2 = [int(x) for x in v2.split('.')]
+max_len = max(len(n1), len(n2))
+n1.extend([0] * (max_len - len(n1)))
+n2.extend([0] * (max_len - len(n2)))
+sys.exit(0 if n1 < n2 else (1 if n1 > n2 else 2))
+" $1 $2
+}
+
 function _logging {
     local _level=$1; shift
     local _datetime=`/bin/date '+%m-%d %H:%M:%S>'`
@@ -73,6 +93,7 @@ function checkout_and_copy_tag {
   _arch_path="${DIR_COPIES}/.archives/${_repo}.prod.${_tag}"
   _post_path="${DIR_COPIES}/${_repo}.prod.post"
   _docker_path="${DIR_COPIES}/${_repo}.prod.docker"
+  _latest_path="${DIR_COPIES}/${_repo}.prod.latest"
 
   # if path exists, skip
   [[ -d $_cp_path ]] && return
@@ -85,6 +106,18 @@ function checkout_and_copy_tag {
 
   # check whether need to init all files at first
   mkdir -p $_cp_path && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for new RELEASE [ $_tag ]"
+
+  if [[ -L $_latest_path ]]; then
+    _cur_latest_path=$(readlink $_latest_path)
+    _cur_latest_tag=$(basename $_cur_latest_path | sed 's/.*.prod.//')
+
+    if _version_less_than $_cur_latest_tag $_tag; then
+      rm -f $_latest_path
+      ln -sf $_cp_path $_latest_path
+    fi
+  else
+    ln -sf $_cp_path $_latest_path
+  fi
 
   # post scripts
   _handle_post ${_post_path} ${_cp_path}
@@ -200,6 +233,7 @@ function fetch_and_check {
   for _bp in `/bin/ls -d ${DIR_COPIES}/${_repo}.*/`; do
 
       (echo $_bp | grep -q to-be-removed) && continue
+      (echo $_bp | grep -q .latest) && continue
 
       _bp=${_bp%/}
 
