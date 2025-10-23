@@ -64,6 +64,25 @@ function _update_latest_version {
     cd - >/dev/null
 }
 
+function _restart_service {
+    SERVICE_DIR=$1
+    
+    # detect docker-compose command or docker comopse subcomand
+    which docker 2>/dev/null || {
+        echo "Error: docker command not found" >/dev/stderr
+        return 1
+    }
+    (docker compose >/dev/null 2>&1) && {
+        _DC_CMD='docker compose'
+    } || {
+        _DC_CMD='docker-compose'
+    }
+    
+    echo "Restarting service: $(basename $SERVICE_DIR)"
+    cd $SERVICE_DIR
+    $_DC_CMD restart
+}
+
 ## __main__ start here
 if [[ -z $1 ]]; then
   echo "Usage: $0 <service-workdir> [update]"
@@ -96,6 +115,7 @@ if [[ $2 == "update" ]]; then
     fi
 
     _update_latest_version $SERVICE_DIR $CUR_VERSION $LATEST_VERSION
+    _restart_service $SERVICE_DIR
 else
     echo "Current version: $CUR_VERSION"
     echo "Latest version: $LATEST_VERSION"
