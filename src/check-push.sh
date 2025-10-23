@@ -12,6 +12,7 @@ BR_WHITELIST="main master dev test alpha"
 
 [[ -z $DIR_REPOS ]] && DIR_REPOS=/work/git_repos
 [[ -z $DIR_COPIES ]] && DIR_COPIES=/work/copies
+[[ -z $DIR_SCRIPTS ]] && DIR_SCRIPTS=/work/scripts
 [[ -z $CI_LOCK ]] && CI_LOCK=/tmp/.ci-lock
 
 function _version_less_than {
@@ -263,6 +264,13 @@ function fetch_and_check {
 function main {
   # working dir
   [[ -d $DIR_REPOS ]] || mkdir -p $DIR_REPOS
+
+  # check scripts dir and copy scripts in docker to external
+  [[ ! -d $DIR_SCRIPTS ]] && {
+    # only copy scripts once when creating the dir
+    mkdir -p $DIR_SCRIPTS
+    rsync -a /scripts/* $DIR_SCRIPTS
+  }
 
   # loop like a daemon
   while true; do
