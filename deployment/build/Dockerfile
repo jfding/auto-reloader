@@ -15,10 +15,12 @@ RUN apt-get update && \
 # for github.com ssh access
 COPY dot.ssh/* /root/.ssh/
 
-WORKDIR /scripts
+RUN mkdir -p /scripts
 COPY check-push.sh /scripts
-COPY hook.py /scripts
-COPY *.whl /scripts
-RUN pip install /scripts/*.whl
 
-CMD /scripts/hook.py
+WORKDIR /webhook
+COPY hook.py /webhook
+COPY *.whl /webhook
+RUN pip install /webhook/*.whl
+
+CMD /webhook/hook.py

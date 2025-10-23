@@ -3,6 +3,7 @@
 ## global settings
 [[ -z $VERB ]] && VERB=1
 [[ -z $TIMEOUT ]] && TIMEOUT=600
+[[ -z $SLEEP_TIME ]] && SLEEP_TIME=360
 
 # if VERB=0, keep super silent
 [[ $VERB = 0 ]] && exec>/dev/null
@@ -12,6 +13,26 @@ BR_WHITELIST="main master dev test alpha"
 [[ -z $DIR_REPOS ]] && DIR_REPOS=/work/git_repos
 [[ -z $DIR_COPIES ]] && DIR_COPIES=/work/copies
 [[ -z $CI_LOCK ]] && CI_LOCK=/tmp/.ci-lock
+
+function _version_less_than {
+  if [[ -z $1 ]] || [[ -z $2 ]]; then
+    return 100
+  fi
+  if [[ $1 == $2 ]]; then
+    return 2
+  fi
+
+  python3 -c "
+import sys
+v1, v2 = sys.argv[1].lstrip('v'), sys.argv[2].lstrip('v')
+n1 = [int(x) for x in v1.split('.')]
+n2 = [int(x) for x in v2.split('.')]
+max_len = max(len(n1), len(n2))
+n1.extend([0] * (max_len - len(n1)))
+n2.extend([0] * (max_len - len(n2)))
+sys.exit(0 if n1 < n2 else (1 if n1 > n2 else 2))
+" $1 $2
+}
 
 function _logging {
     local _level=$1; shift
@@ -70,17 +91,34 @@ function checkout_and_copy_tag {
   local _tag=$2
 
   _cp_path="${DIR_COPIES}/${_repo}.prod.${_tag}"
+  _arch_path="${DIR_COPIES}/.archives/${_repo}.prod.${_tag}"
   _post_path="${DIR_COPIES}/${_repo}.prod.post"
   _docker_path="${DIR_COPIES}/${_repo}.prod.docker"
+  _latest_path="${DIR_COPIES}/${_repo}.prod.latest"
 
   # if path exists, skip
   [[ -d $_cp_path ]] && return
 
+  # if path exists with dot prefix, skip
+  [[ -d $_arch_path ]] && return
+  
   # start to work on this br
   git checkout -q -f $_tag
 
   # check whether need to init all files at first
   mkdir -p $_cp_path && rsync -a --delete --exclude .git . $_cp_path && say "..copy files for new RELEASE [ $_tag ]"
+
+  if [[ -L $_latest_path ]]; then
+    _cur_latest_path=$(readlink $_latest_path)
+    _cur_latest_tag=$(basename $_cur_latest_path | sed 's/.*.prod.//')
+
+    if _version_less_than $_cur_latest_tag $_tag; then
+      rm -f $_latest_path
+      ln -sf $(basename $_cp_path) $_latest_path
+    fi
+  else
+    ln -sf $(basename $_cp_path) $_latest_path
+  fi
 
   # post scripts
   _handle_post ${_post_path} ${_cp_path}
@@ -167,7 +205,7 @@ function fetch_and_check {
   [[ -f .git/index.lock ]] && rm -f .git/index.lock
 
   say "..fetching repo ..."
-  _timeout git fetch -q --all --tags
+  _timeout git fetch -q --all --tags --prune
 
   #for _br in `ls .git/refs/remotes/origin/`; do
   for _br in `git branch -r  | grep -v HEAD | sed -e 's/.*origin\///'`; do
@@ -187,13 +225,16 @@ function fetch_and_check {
     checkout_and_copy_tag $_repo $_release
 
     # heart beat
-    touch "${DIR_COPIES}/${_repo}.prod.${_release}/.living"
+    if [[ -d "${DIR_COPIES}/${_repo}.prod.${_release}" ]]; then
+      touch "${DIR_COPIES}/${_repo}.prod.${_release}/.living"
+    fi
   done
 
   # clean up deprected dirs in "work/copies"
   for _bp in `/bin/ls -d ${DIR_COPIES}/${_repo}.*/`; do
 
       (echo $_bp | grep -q to-be-removed) && continue
+      (echo $_bp | grep -q .latest) && continue
 
       _bp=${_bp%/}
 
@@ -240,6 +281,7 @@ function main {
     # Release lock
     rm -f $CI_LOCK
 
+    # if SLEEP_TIME is not set, means run once and exit
     [[ -z $SLEEP_TIME ]] && exit 0
 
     say "waiting for next check ..."
@@ -248,4 +290,9 @@ function main {
 }
 
 ## __main__ start here
-main
+if [[ $1 == "once" ]]; then
+  unset SLEEP_TIME
+  main
+else
+  main
+fi

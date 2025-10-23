@@ -75,6 +75,22 @@ mkdir -p "$COPIES_DIR/webapp.dev"
 touch "$COPIES_DIR/webapp.dev/.trigger"
 echo "Created .trigger file for webapp.dev"
 
+# Create dot prefixed dirs for tag
+mkdir -p "$COPIES_DIR/.archives/api-service.prod.v1.0.0"
+echo "Test content for dot-prefixed directory" > "$COPIES_DIR/.archives/api-service.prod.v1.0.0/test.txt"
+echo "Created dot-prefixed directory: .archives/api-service.prod.v1.0.0"
+mkdir -p "$COPIES_DIR/.archives/mobile-app.prod.v2.0.0"
+echo "Test content for dot-prefixed directory" > "$COPIES_DIR/.archives/mobile-app.prod.v2.0.0/test.txt"
+echo "Created dot-prefixed directory: .archives/mobile-app.prod.v2.0.0"
+
+# Create invalid dirs for nonexisiting tags
+mkdir -p "$COPIES_DIR/api-service.prod.v3.0.0"
+echo "Test content for dot-prefixed directory" > "$COPIES_DIR/api-service.prod.v3.0.0/test.txt"
+echo "Created dot-prefixed directory: api-service.prod.v3.0.0"
+mkdir -p "$COPIES_DIR/mobile-app.prod.v3.0.0"
+echo "Test content for dot-prefixed directory" > "$COPIES_DIR/mobile-app.prod.v3.0.0/test.txt"
+echo "Created dot-prefixed directory: mobile-app.prod.v3.0.0"
+
 echo ""
 echo "Test scenarios created successfully!"
 echo "Available test configurations:"
